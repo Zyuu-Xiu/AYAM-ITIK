@@ -18,6 +18,86 @@ const searchInput = document.querySelector("#search");
 const addDialog = document.querySelector("#addBookDialog");
 const addForm = document.querySelector("#addBookForm");
 
+let uploadedCover = "";
+
+const coverFileInput = document.querySelector("#coverFile");
+const coverPasteZone = document.querySelector("#coverPasteZone");
+const coverPreview = document.querySelector("#coverPreview");
+const clearCoverButton = document.querySelector("#clearCoverImage");
+
+async function useCoverImage(file) {
+  if (!file || !file.type.startsWith("image/")) {
+    showToast("Pilih fail gambar seperti JPG, PNG atau WebP.");
+    return;
+  }
+
+  if (file.size > 8 * 1024 * 1024) {
+    showToast("Saiz gambar maksimum ialah 8 MB.");
+    return;
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 700 / bitmap.width, 1000 / bitmap.height);
+    const canvas = document.createElement("canvas");
+
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+
+    uploadedCover = canvas.toDataURL("image/jpeg", 0.82);
+    coverPreview.src = uploadedCover;
+    coverPreview.hidden = false;
+    clearCoverButton.hidden = false;
+  } catch {
+    showToast("Gambar tak dapat dibuka. Cuba fail lain.");
+  }
+}
+
+function clearCoverImage() {
+  uploadedCover = "";
+  coverFileInput.value = "";
+  coverPreview.removeAttribute("src");
+  coverPreview.hidden = true;
+  clearCoverButton.hidden = true;
+}
+
+document.querySelector("#chooseCoverImage").addEventListener("click", () => {
+  coverFileInput.click();
+});
+
+coverFileInput.addEventListener("change", () => {
+  useCoverImage(coverFileInput.files[0]);
+});
+
+clearCoverButton.addEventListener("click", clearCoverImage);
+
+coverPasteZone.addEventListener("paste", event => {
+  const imageItem = [...(event.clipboardData?.items || [])]
+    .find(item => item.type.startsWith("image/"));
+
+  if (!imageItem) return;
+
+  event.preventDefault();
+  useCoverImage(imageItem.getAsFile());
+});
+
+coverPasteZone.addEventListener("dragover", event => {
+  event.preventDefault();
+  coverPasteZone.classList.add("dragging");
+});
+
+coverPasteZone.addEventListener("dragleave", () => {
+  coverPasteZone.classList.remove("dragging");
+});
+
+coverPasteZone.addEventListener("drop", event => {
+  event.preventDefault();
+  coverPasteZone.classList.remove("dragging");
+  useCoverImage(event.dataTransfer.files[0]);
+});
+
 function saveStorage() {
   localStorage.setItem(BOOKS_KEY, JSON.stringify(books));
   localStorage.setItem(LIST_KEY, JSON.stringify([...myList]));
