@@ -1,3 +1,6 @@
+const starterBooks = [
+];
+
 const BOOKS_KEY = "bookflix-books-v2";
 const LIST_KEY = "bookflix-my-list-v2";
 function readStorage(key, fallback) {
